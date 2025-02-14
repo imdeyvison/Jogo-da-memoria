@@ -1,125 +1,131 @@
-const board = document.getElementById("board") as HTMLDivElement;
-const timerElement = document.getElementById("timer") as HTMLDivElement;
+// Array de cartas com pares correspondentes
+const cards = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D'];
 
-const cards = ["A", "A", "B", "B", "C", "C", "D", "D"];
-let revealedCards: HTMLDivElement[] = [];
+// Variáveis para armazenar as cartas selecionadas e o número de pares encontrados
+let firstCard: HTMLElement | null = null;
+let secondCard: HTMLElement | null = null;
 let matchedPairs = 0;
-let timeLeft = 60;
-let timer: number;
+let timer = 60; // Tempo inicial em segundos
 
-// Embaralha as cartas
-function shuffle(array: string[]) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
+// Criação de um worker para gerenciar dicas
+const worker = new Worker('worker.js');
+worker.postMessage({ type: 'startHints' });
 
-// Inicia o jogo
-function startGame() {
-  shuffle(cards);
-  createBoard();
-  startTimer();
-  startHintThread();
-}
-
-// Cria o tabuleiro com as cartas
-function createBoard() {
-  board.innerHTML = "";
-  cards.forEach((card, index) => {
-    const cardElement = document.createElement("div");
-    cardElement.classList.add("card");
-    cardElement.dataset.value = card;
-    cardElement.dataset.index = index.toString();
-    cardElement.addEventListener("click", () => revealCard(cardElement));
-    board.appendChild(cardElement);
-  });
-}
-
-// Revela uma carta
-function revealCard(card: HTMLDivElement) {
-  if (revealedCards.length < 2 && !card.classList.contains("revealed")) {
-    card.classList.add("revealed");
-    card.textContent = card.dataset.value || "";
-    revealedCards.push(card);
-
-    if (revealedCards.length === 2) {
-      checkMatch();
+// Escuta mensagens do worker para revelar cartas aleatórias
+worker.addEventListener('message', (e) => {
+    if (e.data.type === 'hint') {
+        revealRandomCard(); // Chama a função para revelar uma carta aleatória
     }
-  }
-}
+});
 
-// Verifica se as cartas reveladas são um par
-function checkMatch() {
-  const [card1, card2] = revealedCards;
+// Função para revelar uma carta aleatória por 1 segundo
+function revealRandomCard() {
+    const board = document.getElementById('game-board');
+    if (!board) return;
+    const unflippedCards = Array.from(board.children).filter((card) => (card as HTMLElement).innerText === '?');
+    if (unflippedCards.length === 0) return;
 
-  if (card1.dataset.value === card2.dataset.value) {
-    card1.classList.add("matched");
-    card2.classList.add("matched");
-    matchedPairs++;
+    const randomCard = unflippedCards[Math.floor(Math.random() * unflippedCards.length)] as HTMLElement;
+    randomCard.innerText = randomCard.dataset.value || '';
+    randomCard.classList.add('flipped');
 
-    if (matchedPairs === cards.length / 2) {
-      endGame(true);
-    }
-  } else {
     setTimeout(() => {
-      card1.classList.remove("revealed");
-      card2.classList.remove("revealed");
-      card1.textContent = "";
-      card2.textContent = "";
+        randomCard.innerText = '?';
+        randomCard.classList.remove('flipped');
     }, 1000);
-  }
-
-  revealedCards = [];
 }
 
-// Inicia o timer
+// Função para iniciar o cronômetro
 function startTimer() {
-  timer = setInterval(() => {
-    timeLeft--;
-    timerElement.textContent = `Tempo: ${timeLeft}s`;
+    const timerInterval = setInterval(() => {
+        timer--;
+        const timerElement = document.getElementById('timer');
+        if (timerElement) {
+            timerElement.textContent = `Tempo: ${timer}s`;
+        }
+        if (timer <= 0) {
+            clearInterval(timerInterval);
+            if (matchedPairs === cards.length / 2) {
+                showVictoryMessage();
+            } else {
+                showDefeatMessage();
+            }
+        }
+    }, 1000);
+}
 
-    if (timeLeft === 0) {
-      endGame(false);
+// Função para criar o tabuleiro de cartas
+function createBoard() {
+    const board = document.getElementById('game-board');
+    if (board) {
+        cards.sort(() => 0.5 - Math.random());
+        cards.forEach(card => {
+            const cardElement = document.createElement('div');
+            cardElement.classList.add('card');
+            cardElement.dataset.value = card;
+            cardElement.innerText = '?';
+            cardElement.addEventListener('click', () => onCardClick(cardElement));
+            board.appendChild(cardElement);
+        });
     }
-  }, 1000);
 }
 
-// Thread de dicas (revela uma carta aleatória a cada 10 segundos)
-function startHintThread() {
-  setInterval(() => {
-    const unrevealedCards = Array.from(board.children).filter(
-      (card) => !card.classList.contains("revealed") && !card.classList.contains("matched")
-    ) as HTMLDivElement[];
+// Função chamada ao clicar em uma carta
+function onCardClick(cardElement: HTMLElement) {
+    if (firstCard && secondCard) return;
 
-    if (unrevealedCards.length > 0) {
-      const randomCard = unrevealedCards[Math.floor(Math.random() * unrevealedCards.length)];
-      randomCard.classList.add("revealed");
-      randomCard.textContent = randomCard.dataset.value || "";
+    cardElement.innerText = cardElement.dataset.value || '';
+    cardElement.classList.add('flipped');
 
-      setTimeout(() => {
-        randomCard.classList.remove("revealed");
-        randomCard.textContent = "";
-      }, 1000);
+    if (!firstCard) {
+        firstCard = cardElement;
+    } else if (firstCard && !secondCard && cardElement !== firstCard) {
+        secondCard = cardElement;
+        if (firstCard.dataset.value === secondCard.dataset.value) {
+            matchedPairs++;
+            resetCards();
+        } else {
+            setTimeout(() => {
+                if (firstCard && secondCard) {
+                    firstCard.innerText = '?';
+                    secondCard.innerText = '?';
+                    firstCard.classList.remove('flipped');
+                    secondCard.classList.remove('flipped');
+                    resetCards();
+                }
+            }, 1000);
+        }
     }
-  }, 10000);
 }
 
-// Finaliza o jogo
-function endGame(isWin: boolean) {
-  clearInterval(timer);
-  alert(isWin ? "Parabéns! Você venceu!" : "Tempo esgotado! Tente novamente.");
-  resetGame();
+// Função para resetar as cartas selecionadas
+function resetCards() {
+    firstCard = null;
+    secondCard = null;
 }
 
-// Reinicia o jogo
-function resetGame() {
-  timeLeft = 60;
-  matchedPairs = 0;
-  revealedCards = [];
-  timerElement.textContent = `Tempo: ${timeLeft}s`;
-  startGame();
+// Exibe mensagem de vitória
+function showVictoryMessage() {
+    const messageElement = document.getElementById('message');
+    if (messageElement) {
+        messageElement.textContent = 'Parabéns! Você ganhou!';
+        messageElement.style.color = 'green';
+    }
 }
 
-// Inicia o jogo ao carregar a página
-window.onload = startGame;
+// Exibe mensagem de derrota
+function showDefeatMessage() {
+    const messageElement = document.getElementById('message');
+    if (messageElement) {
+        messageElement.textContent = 'Que pena! Você não conseguiu encontrar todos os pares a tempo.';
+        messageElement.style.color = 'red';
+    }
+}
+
+// Chama o worker para revelar uma carta a cada 10 segundos
+setInterval(() => {
+    worker.postMessage({ type: 'hint' });
+}, 10000);
+
+createBoard(); // Cria o tabuleiro
+startTimer(); // Inicia o cronômetro
