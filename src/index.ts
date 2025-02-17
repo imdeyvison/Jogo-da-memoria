@@ -1,97 +1,97 @@
 // Array de cartas com pares correspondentes
-const cards = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D'];
+const cartas = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D'];
 
 // Variáveis para armazenar as cartas selecionadas e o número de pares encontrados
-let firstCard: HTMLElement | null = null;
-let secondCard: HTMLElement | null = null;
-let matchedPairs = 0;
-let timer = 60; // Tempo inicial em segundos
+let primeiraCarta: HTMLElement | null = null;
+let segundaCarta: HTMLElement | null = null;
+let paresEncontrados = 0;
+let cronometro = 60; // Tempo inicial em segundos
 
 // Criação de um worker para gerenciar dicas
-const worker = new Worker('worker.js');
-worker.postMessage({ type: 'startHints' });
+const trabalhador = new Worker('worker.js');
+trabalhador.postMessage({ tipo: 'iniciarDicas' });
 
 // Escuta mensagens do worker para revelar cartas aleatórias
-worker.addEventListener('message', (e) => {
-    if (e.data.type === 'hint') {
-        revealRandomCard(); // Chama a função para revelar uma carta aleatória
+trabalhador.addEventListener('message', (e) => {
+    if (e.data.tipo === 'dica') {
+        revelarCartaAleatoria(); // Chama a função para revelar uma carta aleatória
     }
 });
 
 // Função para revelar uma carta aleatória por 1 segundo
-function revealRandomCard() {
-    const board = document.getElementById('game-board');
-    if (!board) return;
-    const unflippedCards = Array.from(board.children).filter((card) => (card as HTMLElement).innerText === '?');
-    if (unflippedCards.length === 0) return;
+function revelarCartaAleatoria() {
+    const tabuleiro = document.getElementById('game-board');
+    if (!tabuleiro) return;
+    const cartasNaoViradas = Array.from(tabuleiro.children).filter((carta) => (carta as HTMLElement).innerText === '?');
+    if (cartasNaoViradas.length === 0) return;
 
-    const randomCard = unflippedCards[Math.floor(Math.random() * unflippedCards.length)] as HTMLElement;
-    randomCard.innerText = randomCard.dataset.value || '';
-    randomCard.classList.add('flipped');
+    const cartaAleatoria = cartasNaoViradas[Math.floor(Math.random() * cartasNaoViradas.length)] as HTMLElement;
+    cartaAleatoria.innerText = cartaAleatoria.dataset.value || '';
+    cartaAleatoria.classList.add('flipped');
 
     setTimeout(() => {
-        randomCard.innerText = '?';
-        randomCard.classList.remove('flipped');
+        cartaAleatoria.innerText = '?';
+        cartaAleatoria.classList.remove('flipped');
     }, 1000);
 }
 
 // Função para iniciar o cronômetro
-function startTimer() {
-    const timerInterval = setInterval(() => {
-        timer--;
-        const timerElement = document.getElementById('timer');
-        if (timerElement) {
-            timerElement.textContent = `Tempo: ${timer}s`;
+function iniciarCronometro() {
+    const intervaloCronometro = setInterval(() => {
+        cronometro--;
+        const elementoCronometro = document.getElementById('timer');
+        if (elementoCronometro) {
+            elementoCronometro.textContent = `Tempo: ${cronometro}s`;
         }
-        if (timer <= 0) {
-            clearInterval(timerInterval);
-            if (matchedPairs === cards.length / 2) {
-                showVictoryMessage();
+        if (cronometro <= 0) {
+            clearInterval(intervaloCronometro);
+            if (paresEncontrados === cartas.length / 2) {
+                exibirMensagemVitoria();
             } else {
-                showDefeatMessage();
+                exibirMensagemDerrota();
             }
         }
     }, 1000);
 }
 
 // Função para criar o tabuleiro de cartas
-function createBoard() {
-    const board = document.getElementById('game-board');
-    if (board) {
-        cards.sort(() => 0.5 - Math.random());
-        cards.forEach(card => {
-            const cardElement = document.createElement('div');
-            cardElement.classList.add('card');
-            cardElement.dataset.value = card;
-            cardElement.innerText = '?';
-            cardElement.addEventListener('click', () => onCardClick(cardElement));
-            board.appendChild(cardElement);
+function criarTabuleiro() {
+    const tabuleiro = document.getElementById('game-board');
+    if (tabuleiro) {
+        cartas.sort(() => 0.5 - Math.random());
+        cartas.forEach(carta => {
+            const elementoCarta = document.createElement('div');
+            elementoCarta.classList.add('card');
+            elementoCarta.dataset.value = carta;
+            elementoCarta.innerText = '?';
+            elementoCarta.addEventListener('click', () => aoClicarNaCarta(elementoCarta));
+            tabuleiro.appendChild(elementoCarta);
         });
     }
 }
 
 // Função chamada ao clicar em uma carta
-function onCardClick(cardElement: HTMLElement) {
-    if (firstCard && secondCard) return;
+function aoClicarNaCarta(elementoCarta: HTMLElement) {
+    if (primeiraCarta && segundaCarta) return;
 
-    cardElement.innerText = cardElement.dataset.value || '';
-    cardElement.classList.add('flipped');
+    elementoCarta.innerText = elementoCarta.dataset.value || '';
+    elementoCarta.classList.add('flipped');
 
-    if (!firstCard) {
-        firstCard = cardElement;
-    } else if (firstCard && !secondCard && cardElement !== firstCard) {
-        secondCard = cardElement;
-        if (firstCard.dataset.value === secondCard.dataset.value) {
-            matchedPairs++;
-            resetCards();
+    if (!primeiraCarta) {
+        primeiraCarta = elementoCarta;
+    } else if (primeiraCarta && !segundaCarta && elementoCarta !== primeiraCarta) {
+        segundaCarta = elementoCarta;
+        if (primeiraCarta.dataset.value === segundaCarta.dataset.value) {
+            paresEncontrados++;
+            resetarCartas();
         } else {
             setTimeout(() => {
-                if (firstCard && secondCard) {
-                    firstCard.innerText = '?';
-                    secondCard.innerText = '?';
-                    firstCard.classList.remove('flipped');
-                    secondCard.classList.remove('flipped');
-                    resetCards();
+                if (primeiraCarta && segundaCarta) {
+                    primeiraCarta.innerText = '?';
+                    segundaCarta.innerText = '?';
+                    primeiraCarta.classList.remove('flipped');
+                    segundaCarta.classList.remove('flipped');
+                    resetarCartas();
                 }
             }, 1000);
         }
@@ -99,33 +99,25 @@ function onCardClick(cardElement: HTMLElement) {
 }
 
 // Função para resetar as cartas selecionadas
-function resetCards() {
-    firstCard = null;
-    secondCard = null;
+function resetarCartas() {
+    primeiraCarta = null;
+    segundaCarta = null;
 }
 
-// Exibe mensagem de vitória
-function showVictoryMessage() {
-    const messageElement = document.getElementById('message');
-    if (messageElement) {
-        messageElement.textContent = 'Parabéns! Você ganhou!';
-        messageElement.style.color = 'green';
-    }
+// Exibe mensagem de vitória usando alert
+function exibirMensagemVitoria() {
+    alert('Parabéns! Você ganhou!');
 }
 
-// Exibe mensagem de derrota
-function showDefeatMessage() {
-    const messageElement = document.getElementById('message');
-    if (messageElement) {
-        messageElement.textContent = 'Que pena! Você não conseguiu encontrar todos os pares a tempo.';
-        messageElement.style.color = 'red';
-    }
+// Exibe mensagem de derrota usando alert
+function exibirMensagemDerrota() {
+    alert('Que pena! Você não conseguiu encontrar todos os pares a tempo.');
 }
 
 // Chama o worker para revelar uma carta a cada 10 segundos
 setInterval(() => {
-    worker.postMessage({ type: 'hint' });
+    trabalhador.postMessage({ tipo: 'dica' });
 }, 10000);
 
-createBoard(); // Cria o tabuleiro
-startTimer(); // Inicia o cronômetro
+criarTabuleiro(); // Cria o tabuleiro
+iniciarCronometro(); // Inicia o cronômetro

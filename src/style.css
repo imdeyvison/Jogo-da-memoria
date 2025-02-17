@@ -7,6 +7,10 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   background-color: #f0f0f0;
+  background-image: url("../images/fundo.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 h1 {
@@ -14,22 +18,41 @@ h1 {
 }
 
 #timer {
-  font-size: 24px;
+  font-size: 30px;
+  color: rgb(0, 0, 0);
+  text-align:center;
   margin-bottom: 20px;
+  grid-column: span 4; /* Faz o timer ocupar a largura total do grid */
+  grid-row: 4; /* O timer vai para a segunda linha (abaixo das cartas) */
+  margin-top: 10px; /* Ajusta o espaçamento se necessário */
 }
 
 #game-board {
   display: grid;
   grid-template-columns: repeat(4, 100px);
-  gap: 10px;
+  gap: 60px;
   justify-content: center;
   align-content: center;
   pointer-events: auto;
+  background: rgba(255, 255, 255, 0.1); /* Fundo semi-transparente */
+  backdrop-filter: blur(8px); /* Efeito de desfoque */
+  border-radius: 20px; /* Bordas arredondadas */
+  padding: 30px 70px 30px 30px ; /* Espaçamento interno */
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* Sombra suave */
+}
+
+#game-title {
+  font-size: 40px;
+  color: rgb(0, 0, 0);
+  text-align: center;
+  grid-column: span 4; /* O título ocupa a largura total do grid */
+  grid-row: 1; /* O título ficará na primeira linha */
+  margin-bottom: 20px; /* Ajusta o espaçamento entre o título e as cartas */
 }
 
 .card {
-  width: 100px;
-  height: 100px;
+  width: 140px;
+  height: 140px;
   background-color: #333;
   color: white;
   display: flex;
