@@ -18,6 +18,22 @@ trabalhador.addEventListener('message', (e) => {
     }
 });
 
+// Função para criar o tabuleiro de cartas
+function criarTabuleiro() {
+    const tabuleiro = document.getElementById('game-board');
+    if (tabuleiro) {
+        cartas.sort(() => 0.5 - Math.random());
+        cartas.forEach(carta => {
+            const elementoCarta = document.createElement('div');
+            elementoCarta.classList.add('card');
+            elementoCarta.dataset.value = carta;
+            elementoCarta.innerText = '?';
+            elementoCarta.addEventListener('click', () => aoClicarNaCarta(elementoCarta));
+            tabuleiro.appendChild(elementoCarta);
+        });
+    }
+}
+
 // Função para revelar uma carta aleatória por 1 segundo
 function revelarCartaAleatoria() {
     const tabuleiro = document.getElementById('game-board');
@@ -42,6 +58,8 @@ function iniciarCronometro() {
         const elementoCronometro = document.getElementById('timer');
         if (elementoCronometro) {
             elementoCronometro.textContent = `Tempo: ${cronometro}s`;
+        }if(paresEncontrados == 4){
+            cronometro = 0;
         }
         if (cronometro <= 0) {
             clearInterval(intervaloCronometro);
@@ -52,22 +70,6 @@ function iniciarCronometro() {
             }
         }
     }, 1000);
-}
-
-// Função para criar o tabuleiro de cartas
-function criarTabuleiro() {
-    const tabuleiro = document.getElementById('game-board');
-    if (tabuleiro) {
-        cartas.sort(() => 0.5 - Math.random());
-        cartas.forEach(carta => {
-            const elementoCarta = document.createElement('div');
-            elementoCarta.classList.add('card');
-            elementoCarta.dataset.value = carta;
-            elementoCarta.innerText = '?';
-            elementoCarta.addEventListener('click', () => aoClicarNaCarta(elementoCarta));
-            tabuleiro.appendChild(elementoCarta);
-        });
-    }
 }
 
 // Função chamada ao clicar em uma carta
@@ -104,12 +106,12 @@ function resetarCartas() {
     segundaCarta = null;
 }
 
-// Exibe mensagem de vitória usando alert
+
 function exibirMensagemVitoria() {
     alert('Parabéns! Você ganhou!');
 }
 
-// Exibe mensagem de derrota usando alert
+
 function exibirMensagemDerrota() {
     alert('Que pena! Você não conseguiu encontrar todos os pares a tempo.');
 }
@@ -119,5 +121,5 @@ setInterval(() => {
     trabalhador.postMessage({ tipo: 'dica' });
 }, 10000);
 
-criarTabuleiro(); // Cria o tabuleiro
-iniciarCronometro(); // Inicia o cronômetro
+criarTabuleiro(); 
+iniciarCronometro(); 
